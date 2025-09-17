@@ -2,7 +2,7 @@
 SIMPLE SHELL ASSIGNMENT:
 
 Divanshu Jain(2024198):  execute_ pipeline, signal handler, shell_loop
-Parth Choyal(2024401):  read, parse and split args, history, pid and time tracking.
+Parth Choyal(2024403):  read, parse and split args, history, pid and time tracking.
 
 
 
