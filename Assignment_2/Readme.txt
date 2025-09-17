@@ -39,6 +39,12 @@ Implementation of read, parse and split args, history, pid and time tracking:
 3. Later, we implement print_exit_summary to print the summary upon exiting from shell.  We create a handler function for Ctrl-C(sigint), it just calls the print_exit_summary and  exits.
 
 
+Command that will not work:
+
+ cd (change directory) command will not work because it is a external command not stored in /bin, /usr/bin. cd dont have a binary file at the location /usr/bin.
+
+
+
 
 
  
