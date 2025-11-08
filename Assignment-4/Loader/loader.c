@@ -126,3 +126,116 @@ static void segv_handler(int sig,siginfo_t *si,void *unused){
         __sync_fetch_and_add(&internal_frag_bytes, bytes_beyond);
     }
 }
+
+//cleanup
+void loader_cleanup() {
+    if (segs){
+        for(int i=0;i<ehdr->e_phnum;++i){
+            if(phdrs[i].p_type!=PT_LOAD) continue;
+            uintptr_t base=(uintptr_t)segs[i].ph.p_vaddr;
+            for (size_t p=0;p<segs[i].page_count;++p){
+                if(segs[i].page_alloc[p]) {
+                    munmap((void*)(base+p*PAGE_SIZE),PAGE_SIZE);
+                }
+            }
+
+            free(segs[i].page_alloc);
+        }
+
+        free(segs);
+    }
+
+    free(phdrs);
+    free(ehdr);
+
+    if (fd >= 0) {
+        close(fd);
+    }
+
+    printf("SimpleSmartLoader stats:\n");
+    printf(" page faults handled   : %zu\n",page_fault_count);
+    printf(" page allocations      : %zu\n",page_alloc_count);
+    printf(" internal fragmentation : %.3f KB\n",(double)internal_frag_bytes/1024.0);
+}
+
+// load and run ELF 
+void load_and_run_elf(char **argv){
+    
+    fd= open(argv[1],O_RDONLY);
+    if (fd<0){
+        perror("failed to open file");
+        exit(1);
+    }
+
+    //read ELF header
+
+    ehdr=malloc(sizeof(Elf32_Ehdr));
+
+    if (!ehdr || read(fd,ehdr,sizeof(Elf32_Ehdr))!=sizeof(Elf32_Ehdr)){
+        perror("read ehdr");
+        exit(1);
+    }
+
+    // check if the file is a elf 
+    if(ehdr->e_ident[0]!=0x7f||ehdr->e_ident[1]!='E' ||ehdr->e_ident[2]!='L'||ehdr->e_ident[3]!='F') {
+        fprintf(stderr,"Not a valid ELF\n");
+        exit(1);
+    }
+
+    if (ehdr->e_ident[EI_CLASS]!=ELFCLASS32) {
+        fprintf(stderr,"Error: Not a 32-bit ELF file. SimpleSmartLoader only supports ELF32.\n");
+        exit(1);
+    }
+
+    // Read program headers 
+    if (lseek(fd,ehdr->e_phoff,SEEK_SET)<0){
+        perror("lseek phoff");
+        exit(1);
+    }
+
+    size_t phdrs_size=ehdr->e_phnum*ehdr->e_phentsize;
+
+    phdrs=malloc(phdrs_size);
+    if (!phdrs || read(fd,phdrs,phdrs_size)!=(ssize_t)phdrs_size) {
+        perror("read phdrs");
+        exit(1);
+    }
+
+    /* Prepare segment metadata (no allocation yet) */
+    segs =calloc(ehdr->e_phnum,sizeof(seg_info_t));
+
+    if (!segs){
+        perror("calloc segs");
+        exit(1);
+    }
+
+    for (int i=0;i<ehdr->e_phnum;++i){
+        segs[i].ph= phdrs[i];
+        if (phdrs[i].p_type ==PT_LOAD){
+            segs[i].page_count=(phdrs[i].p_memsz+PAGE_SIZE-1)/PAGE_SIZE;
+            segs[i].page_alloc=calloc(segs[i].page_count,sizeof(uint8_t));
+
+            if (!segs[i].page_alloc){
+                perror("calloc page_alloc");
+                exit(1);
+            }
+        }
+    }
+
+    // set up sigsegv handeller
+    struct sigaction sa;
+    sa.sa_sigaction= segv_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags =SA_SIGINFO;
+
+    if (sigaction(SIGSEGV,&sa,NULL)<0){
+        perror("sigaction");
+        exit(1);
+    }
+
+    //entry point 
+    void (*entry_fn)()=(void(*)())(uintptr_t)ehdr->e_entry;
+    entry_fn();
+
+    printf("User _start returned\n");
+}
