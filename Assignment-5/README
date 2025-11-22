@@ -1,1 +1,70 @@
+Simple Multithreader
+
+Divanshu Jain 2024198
+Parth Choyal  2024403
+
+
+How to compile
+
+1. make
+
+This builds Binary of programs:
+- vector   Parallel vector addition
+- matrix   Parallel matrix multiplication
+
+2.
+./vector <numThreads> <size>
+./matrix <numThreads> <size>
+
+Eg:
+    ./vector 4 48000000    
+    ./matrix 8 1024        
+
+
+\parallel_for (1D)
+
+Parallelizes a single loop across multiple threads.
+
+    void parallel_for(int low, int high,std::function<void(int)> &&lambda,int numThreads);
+
+Parameters:
+- low       //Starting index 
+- high      //Ending index
+- lambda    //Function to execute for each iteration receives index i
+- numThreads //Total number of threads (including main thread)
+
+
+
+
+\parallel_for (2D)
+
+Parallelizes nested loops by distributing outer loop iterations across threads.
+
+    void parallel_for(int low1, int high1, int low2, int high2,std::function<void(int, int)> &&lambda,int numThreads);
+
+Parameters:
+- low1, high1  Outer loop range 
+- low2, high2  Inner loop range 
+- lambda       Function to execute for each iteration receives indices i, j
+- numThreads   Total number of threads (including main thread)
+
+
+
+
+- Thread Management: Creates numThreads-1 worker threads; main thread 
+                     participates in computation
+- Work Distribution: Divides iterations evenly across threads with load balancing
+- Timing           : Prints execution time for each parallel_for call
+- Error Handling   : Validates inputs and handles thread creation/joining 
+                     failures
+
+
+\To clean all binary files
+
+make clean
+
+
+Git hub Repo Link: https://github.com/divanshu-06/OS/tree/main/Assignment-5
+
+
 
