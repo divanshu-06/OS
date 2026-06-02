@@ -16,7 +16,6 @@ communicates with the shell over pipes.
 - **Parth Choyal (2024403)** — queue and round-robin scheduling logic, CPU/quantum management.
 - **Divanshu Jain (2024198)** — shell↔scheduler communication, signal handling, job tracking and summary.
 
-Repository (private): `https://github.com/divanshu-06/OS/tree/main/Assignment_3`
 
 ---
 
