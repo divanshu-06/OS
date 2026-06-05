@@ -1,11 +1,14 @@
-# Operating Systems in C — CSE 231
+# Operating Systems in C
 
 ![C](https://img.shields.io/badge/C-00599C?logo=c&logoColor=white)
 ![C++](https://img.shields.io/badge/C%2B%2B11-00599C?logo=cplusplus&logoColor=white)
+![RISC-V](https://img.shields.io/badge/RISC--V-283272?logo=riscv&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-FCC624?logo=linux&logoColor=black)
 ![Make](https://img.shields.io/badge/GNU%20Make-A42E2B?logo=gnu&logoColor=white)
 
-A collection of five low-level systems-programming projects built **from scratch in C / C++**, each re-implementing a core operating-system mechanism without relying on high-level library abstractions. The goal across all of them was to understand how the OS actually works underneath: process creation, ELF loading, CPU scheduling, virtual memory, and multithreading.
+A collection of six low-level systems-programming projects built **from scratch in C / C++**, each re-implementing a core operating-system mechanism without relying on high-level library abstractions. The goal across all of them was to understand how the OS actually works underneath: process creation, ELF loading, CPU scheduling, virtual memory, multithreading, and kernel-level scheduling.
+
+Five projects live in this repository; the sixth — a kernel-level **MLFQ scheduler** built on a real RISC-V teaching OS — lives in a companion repository linked below.
 
 
 ---
@@ -21,7 +24,9 @@ The folders use mixed naming, so here's what each one actually contains:
 | [`Assignment_3`](./Assignment_3) | **SimpleScheduler** | A round-robin CPU scheduler daemon driven by the shell |
 | [`Assignment-4`](./Assignment-4) | **SimpleSmartLoader** | The loader, upgraded to lazy / demand paging via page-fault handling |
 | [`Assignment-5`](./Assignment-5) | **SimpleMultithreader** | A header-only Pthreads abstraction with `parallel_for` and C++11 lambdas |
+| 🔗 [EGOS](https://github.com/divanshu-06/EGOS) | **SimpleOS** | Kernel-level MLFQ scheduler + custom shell commands on a RISC-V teaching OS |
 
+> Each project folder has its own `Makefile`. Build a project by running `make` inside its directory. SimpleOS lives in its own repository because it builds on the [egos-2000](https://github.com/yhzhang0128/egos-2000/) codebase.
 
 ---
 
@@ -52,17 +57,37 @@ A **header-only** C++ library (`simple-multithreader.h`) that hides Pthreads boi
 
 **Concepts:** Pthreads, C++11 lambdas (`std::function`), work partitioning, parallel loops.
 
+### 6. SimpleOS — kernel-level MLFQ scheduler *(bonus)*
+
+> 🔗 **Separate repository: [github.com/divanshu-06/EGOS](https://github.com/divanshu-06/EGOS)**
+
+The most involved project of the set — a pair of extensions to **[egos-2000](https://github.com/yhzhang0128/egos-2000/)**, a 2000-line teaching operating system for **RISC-V (RV32)** that runs on QEMU. This moves from user-space simulation into actual kernel code.
+
+**Part 1 — custom shell utilities (`grep`, `wcl`).** Two user-space commands written entirely against the OS's own system-call wrappers (`dir_lookup`, `file_read`) — no `fopen`/`fread`, no Linux syscalls. Unlike the reference `cat`, both read the *entire* file block by block. `grep` prints lines matching a pattern (with quoted multi-word pattern support); `wcl` counts total lines across multiple files.
+
+**Part 2 — a preemptive MLFQ scheduler in the kernel.** A 5-level Multi-Level Feedback Queue implemented inside the OS's `grass` layer. Processes start at the highest priority and are demoted as they consume their per-level time budget (`(i+1)×100 ms`); a periodic priority boost moves everything back to the top every ~10 s, with an extra boost for the shell on keyboard input. The process control block was extended to track full lifecycle statistics — turnaround time, response time, accumulated CPU time, and timer-interrupt count — printed on process termination.
+
+**Concepts:** kernel-space programming, MLFQ scheduling, priority boosting, preemption via timer interrupts, process control blocks, OS system calls, RISC-V / QEMU.
+
 ---
 
 ## Core OS Concepts Demonstrated
 
 - **Process management** — `fork`, `exec`, `wait`, signals
 - **Inter-process communication** — pipes and `dup2`
-- **CPU scheduling** — round-robin with time quanta and a daemon scheduler
+- **CPU scheduling** — round-robin (user space) and a 5-level MLFQ scheduler (kernel space)
 - **Executable & memory model** — manual ELF parsing and loading
 - **Virtual memory** — demand paging via `SIGSEGV`, 4 KB page allocation, fragmentation tracking
 - **Concurrency** — raw Pthreads wrapped in an ergonomic parallel-for API
+- **Kernel-space programming** — preemptive scheduling, process control blocks, OS system calls on RISC-V
 
 ## Tech Stack
 
-C · C++11 · POSIX / Unix system calls · Pthreads · GNU Make · Linux
+C · C++11 · POSIX / Unix system calls · Pthreads · RISC-V (RV32) · Linux
+
+## Authors
+
+A pair-programming project by:
+
+- **Divanshu Jain** (2024198)
+- **Parth Choyal** (2024403)
